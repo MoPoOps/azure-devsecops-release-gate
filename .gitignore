@@ -1,0 +1,11 @@
+# Operational build outputs
+bin/
+obj/
+publish/
+
+# Local deployment packages
+*.zip
+
+# IDE settings
+.vs/
+.vscode/
