@@ -6,7 +6,7 @@ pool:
 
 variables:
   buildConfiguration: 'Release'
-  # My azure web app name:
+
   webAppName: 'app-release-gate-mopo'
   sonarOrganization: 'mopodevops'
   sonarProjectKey: 'MoPoOps_azure-devsecops-release-gate'
@@ -17,6 +17,12 @@ stages:
   jobs:
   - job: BuildJob
     steps:
+    # Secret scanning (Gitleaks via Docker)
+    - script: |
+        docker run --volume $(Build.SourcesDirectory):/code zricethezaza/gitleaks:latest detect --source=/code --verbose
+      displayName: 'Run Gitleaks Secret Scan'
+      continueOnError: true
+
     # Prepare SAST scanning
     - task: SonarCloudPrepare@4
       displayName: 'Prepare SonarCloud analysis'
@@ -32,6 +38,11 @@ stages:
       inputs:
         command: 'restore'
         projects: '**/*.csproj'
+
+    # SCA dependency vulnerability scan
+    - script: |
+        dotnet list package --vulnerable --include-transitive
+      displayName: 'Run SCA Dependency Vulnerability Scan'
 
     - task: DotNetCoreCLI@2
       displayName: 'Build the application'
