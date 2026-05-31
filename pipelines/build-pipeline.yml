@@ -7,14 +7,26 @@ pool:
 variables:
   buildConfiguration: 'Release'
   # My azure web app name:
-  webAppName: 'app-release-gate-mopo' 
+  webAppName: 'app-release-gate-mopo'
+  sonarOrganization: 'mopodevops'
+  sonarProjectKey: 'MoPoOps_azure-devsecops-release-gate'
 
 stages:
 - stage: BuildStage
-  displayName: 'Build and Package'
+  displayName: 'Build, Scan, and Package'
   jobs:
   - job: BuildJob
     steps:
+    # Prepare SAST scanning
+    - task: SonarCloudPrepare@2
+      displayName: 'Prepare SonarCloud analysis'
+      inputs:
+        SonarCloud: 'sc-sonar-connection'
+        organization: '$(sonarOrganization)'
+        scannerMode: 'MSBuild'
+        projectKey: '$(sonarProjectKey)'
+        projectName: 'azure-devsecops-release-gate'
+
     - task: DotNetCoreCLI@2
       displayName: 'Restore dependencies'
       inputs:
@@ -27,6 +39,16 @@ stages:
         command: 'build'
         projects: '**/*.csproj'
         arguments: '--configuration $(buildConfiguration)'
+
+    # Static source Code security scan
+    - task: SonarCloudAnalyze@2
+      displayName: 'Run SonarCloud Code Analysis'
+
+    # Stop the pipeline if the quality gate fails
+    - task: SonarCloudPublish@2
+      displayName: 'Publish Quality Gate Result'
+      inputs:
+        pollingTimeoutSec: '300'
 
     - task: DotNetCoreCLI@2
       displayName: 'Publish and Zip'
@@ -51,7 +73,7 @@ stages:
   jobs:
   - job: DeployJob
     steps:
-    - task: DownloadBuildArtifacts@0
+    - DownloadBuildArtifacts@0
       displayName: 'Download the Artifact'
       inputs:
         buildType: 'current'
