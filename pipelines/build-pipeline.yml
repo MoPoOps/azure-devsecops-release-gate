@@ -18,7 +18,7 @@ stages:
   - job: BuildJob
     steps:
     # Prepare SAST scanning
-    - task: SonarCloudPrepare@2
+    - task: SonarCloudPrepare@3
       displayName: 'Prepare SonarCloud analysis'
       inputs:
         SonarCloud: 'sc-sonar-connection'
@@ -41,11 +41,11 @@ stages:
         arguments: '--configuration $(buildConfiguration)'
 
     # Static source Code security scan
-    - task: SonarCloudAnalyze@2
+    - task: SonarCloudAnalyze@3
       displayName: 'Run SonarCloud Code Analysis'
 
     # Stop the pipeline if the quality gate fails
-    - task: SonarCloudPublish@2
+    - task: SonarCloudPublish@3
       displayName: 'Publish Quality Gate Result'
       inputs:
         pollingTimeoutSec: '300'
