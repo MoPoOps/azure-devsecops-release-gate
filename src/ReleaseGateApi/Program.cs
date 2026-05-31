@@ -19,4 +19,4 @@ app.MapGet("/config-check", () => new {
     secretExposed = false
 });
 
-app.Run();
+await app.RunAsync();
