@@ -18,12 +18,12 @@ stages:
   - job: BuildJob
     steps:
     # Prepare SAST scanning
-    - task: SonarCloudPrepare@3
+    - task: SonarCloudPrepare@4
       displayName: 'Prepare SonarCloud analysis'
       inputs:
         SonarCloud: 'sc-sonar-connection'
         organization: '$(sonarOrganization)'
-        scannerMode: 'MSBuild'
+        scannerMode: 'dotnet'
         projectKey: '$(sonarProjectKey)'
         projectName: 'azure-devsecops-release-gate'
 
@@ -41,11 +41,11 @@ stages:
         arguments: '--configuration $(buildConfiguration)'
 
     # Static source Code security scan
-    - task: SonarCloudAnalyze@3
+    - task: SonarCloudAnalyze@4
       displayName: 'Run SonarCloud Code Analysis'
 
     # Stop the pipeline if the quality gate fails
-    - task: SonarCloudPublish@3
+    - task: SonarCloudPublish@4
       displayName: 'Publish Quality Gate Result'
       inputs:
         pollingTimeoutSec: '300'
