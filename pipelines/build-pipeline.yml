@@ -6,33 +6,63 @@ pool:
 
 variables:
   buildConfiguration: 'Release'
+  # My azure web app name:
+  webAppName: 'app-release-gate-mopo' 
 
-steps:
-- task: DotNetCoreCLI@2
-  displayName: 'Restore dependencies'
-  inputs:
-    command: 'restore'
-    projects: '**/*.csproj'
+stages:
+- stage: BuildStage
+  displayName: 'Build and Package'
+  jobs:
+  - job: BuildJob
+    steps:
+    - task: DotNetCoreCLI@2
+      displayName: 'Restore dependencies'
+      inputs:
+        command: 'restore'
+        projects: '**/*.csproj'
 
-- task: DotNetCoreCLI@2
-  displayName: 'Build the application'
-  inputs:
-    command: 'build'
-    projects: '**/*.csproj'
-    arguments: '--configuration $(buildConfiguration)'
+    - task: DotNetCoreCLI@2
+      displayName: 'Build the application'
+      inputs:
+        command: 'build'
+        projects: '**/*.csproj'
+        arguments: '--configuration $(buildConfiguration)'
 
-- task: DotNetCoreCLI@2
-  displayName: 'Publish and Zip the application'
-  inputs:
-    command: 'publish'
-    publishWebProjects: false
-    projects: '**/*.csproj'
-    arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
-    zipAfterPublish: true
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish and Zip'
+      inputs:
+        command: 'publish'
+        publishWebProjects: false
+        projects: '**/*.csproj'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
+        zipAfterPublish: true
 
-- task: PublishBuildArtifacts@1
-  displayName: 'Save the Artifact'
-  inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    ArtifactName: 'release-gate-drop'
-    publishLocation: 'Container'
+    - task: PublishBuildArtifacts@1
+      displayName: 'Save the Artifact'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'release-gate-drop'
+        publishLocation: 'Container'
+
+- stage: DeployStage
+  displayName: 'Deploy to Azure'
+  dependsOn: BuildStage
+  condition: succeeded()
+  jobs:
+  - job: DeployJob
+    steps:
+    - task: DownloadBuildArtifacts@0
+      displayName: 'Download the Artifact'
+      inputs:
+        buildType: 'current'
+        downloadType: 'single'
+        artifactName: 'release-gate-drop'
+        downloadPath: '$(System.ArtifactsDirectory)'
+
+    - task: AzureWebApp@1
+      displayName: 'Azure Web App Deploy'
+      inputs:
+        azureSubscription: 'sc-azure-connection'
+        appType: 'webAppLinux'
+        appName: '$(webAppName)'
+        package: '$(System.ArtifactsDirectory)/release-gate-drop/*.zip'
