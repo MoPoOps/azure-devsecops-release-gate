@@ -14,9 +14,14 @@ app.MapGet("/release-readiness", () => new {
     deployment = "azure-app-service"
 });
 
-app.MapGet("/config-check", () => new {
-    keyVaultReachable = true,
-    secretExposed = false
+app.MapGet("/config-check", () => {
+    var secretValue = Environment.GetEnvironmentVariable("ReleaseGateSecret");
+    bool isReachable = !string.IsNullOrEmpty(secretValue);
+    
+    return new {
+        keyVaultReachable = isReachable,
+        secretExposed = false
+    };
 });
 
 await app.RunAsync();
