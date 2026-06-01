@@ -1,0 +1,8 @@
+- name: Local DevSecOps demo
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Create release gate config
+      copy:
+        dest: ./release-gate-config.txt
+        content: "security_gate=enabled"
